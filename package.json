@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node tests/smoke-test.mjs",
+    "db:test": "node scripts/test-db.mjs",
     "db:push": "drizzle-kit push",
     "db:seed": "node scripts/seed.mjs"
   },
