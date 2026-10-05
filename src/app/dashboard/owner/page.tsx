@@ -26,29 +26,19 @@ export default async function OwnerDashboardPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-bold uppercase tracking-wider">
             <Store className="w-3.5 h-3.5" />
-            <span>Executive Business Portal</span>
+            <span>Executive Business Monitor (View Only)</span>
           </div>
           <h1 className="text-3xl font-black text-white mt-1">
-            Dashboard Bisnis 3 Cabang
+            Dashboard Pemantauan 3 Cabang
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Monitoring omzet kasir, volume antrean toko, dan performa barber lintas-cabang hari ini ({analytics.today}).
+            Monitoring performa bisnis, omzet kasir lunas, dan volume antrean real-time ({analytics.today}).
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/admin"
-            className="px-4 py-2 rounded-xl bg-[#252A31] hover:bg-[#303640] border border-[#3A404D] text-xs font-semibold text-zinc-200 transition-colors"
-          >
-            Kelola Master Data
-          </Link>
-          <Link
-            href="/book"
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-colors"
-          >
-            + Buat Booking
-          </Link>
+        <div className="flex items-center gap-2 text-xs text-zinc-400 bg-[#16181C] border border-[#2D3139] px-3.5 py-2 rounded-xl">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Mode Owner: Khusus Pemantauan Bisnis</span>
         </div>
       </div>
 
@@ -148,11 +138,11 @@ export default async function OwnerDashboardPage() {
 
               <div className="pt-6">
                 <Link
-                  href={`/dashboard/branch/${bs.branchId}/queue`}
-                  className="w-full py-2.5 rounded-xl bg-[#252A31] hover:bg-amber-500 hover:text-black text-zinc-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                  href="/queue"
+                  className="w-full py-2.5 rounded-xl bg-[#252A31] hover:bg-[#2F3642] text-zinc-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
                 >
-                  <span>Buka POS Cabang</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Pantau Antrean Live Toko</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-500" />
                 </Link>
               </div>
             </div>

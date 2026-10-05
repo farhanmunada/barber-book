@@ -65,6 +65,17 @@ export interface HaircutBlueprint {
   createdAt: string;
 }
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: "owner" | "admin" | "staff" | "customer";
+  branchId?: string | null;
+  phone?: string;
+  createdAt: string;
+}
+
 export const INITIAL_BRANCHES: BranchItem[] = [
   {
     id: "branch-kemang",
@@ -263,5 +274,45 @@ export const INITIAL_RECIPES: HaircutBlueprint[] = [
     stylingProduct: "Matte Clay",
     notes: "Poni jangan dipotong terlalu pendek di atas alis. Bagian pusaran belakang biarkan sedikit berbobot.",
     createdAt: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(),
+  },
+];
+
+export const INITIAL_USERS: UserAccount[] = [
+  {
+    id: "usr-owner",
+    name: "Bapak Hendarto",
+    email: "owner@barber.com",
+    passwordHash: "$2b$10$OYlgtqJ/RTeRSg2Pv0zvN.lPETCH09dvo2PSyIifnO5q9L8AtdCrC",
+    role: "owner",
+    phone: "0812-0000-001",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "usr-admin",
+    name: "Siti Rahma (Admin Ops)",
+    email: "admin@barber.com",
+    passwordHash: "$2b$10$RLGGW.tKs/GbIvN/b7sJZ.nfwE/h058mgWVtbdUGvlKIXjWqUTMBu",
+    role: "admin",
+    phone: "0812-0000-002",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "usr-kasir-kemang",
+    name: "Kasir Kemang",
+    email: "kasir.kemang@barber.com",
+    passwordHash: "$2b$10$UbZXA7LQfTSfqPb8uDzTDeHUQO3nrbpr17T5pbAARV2QLalWbj.e6",
+    role: "staff",
+    branchId: "branch-kemang",
+    phone: "0812-0000-003",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "usr-budi",
+    name: "Budi Santoso",
+    email: "budi@gmail.com",
+    passwordHash: "$2b$10$H.uJyavsFKEjax5aUEkMgOSJmWIPghDhx0e05vQV88XCKnmn.Zhkm",
+    role: "customer",
+    phone: "0812-9988-7711",
+    createdAt: new Date().toISOString(),
   },
 ];

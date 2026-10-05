@@ -1,85 +1,135 @@
+import { db } from "@/db";
 import {
-  INITIAL_BRANCHES,
-  INITIAL_BARBERS,
-  INITIAL_SERVICES,
-  INITIAL_BOOKINGS,
-  INITIAL_RECIPES,
-  BranchItem,
-  BarberItem,
-  ServiceItem,
-  BookingRecord,
-  HaircutBlueprint,
-} from "./mock-data";
+  branches,
+  users,
+  services,
+  bookings,
+  haircutRecords,
+  bookingServices,
+} from "@/db/schema";
+import { eq, and, or, desc, sql, ilike } from "drizzle-orm";
+import { BranchItem, BarberItem, ServiceItem, BookingRecord, HaircutBlueprint, UserAccount } from "./mock-data";
 
-// In-memory global store to ensure persistence across dev hot-reloads
-declare global {
-  // eslint-disable-next-line no-var
-  var __barber_store: {
-    branches: BranchItem[];
-    barbers: BarberItem[];
-    services: ServiceItem[];
-    bookings: BookingRecord[];
-    recipes: HaircutBlueprint[];
-  } | undefined;
-}
-
-if (!global.__barber_store) {
-  global.__barber_store = {
-    branches: [...INITIAL_BRANCHES],
-    barbers: [...INITIAL_BARBERS],
-    services: [...INITIAL_SERVICES],
-    bookings: [...INITIAL_BOOKINGS],
-    recipes: [...INITIAL_RECIPES],
-  };
-}
-
-const store = global.__barber_store;
-
+// 1. Cabang (Branches) - Direct from Neon Postgres
 export async function getBranches(): Promise<BranchItem[]> {
-  return store.branches;
+  const rows = await db.select().from(branches).orderBy(branches.name);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    address: r.address,
+    phone: r.phone,
+    openTime: r.openTime,
+    closeTime: r.closeTime,
+  }));
 }
 
 export async function getBranchById(id: string): Promise<BranchItem | undefined> {
-  return store.branches.find((b) => b.id === id || b.slug === id);
+  const rows = await db
+    .select()
+    .from(branches)
+    .where(or(eq(branches.id, id), eq(branches.slug, id)))
+    .limit(1);
+
+  if (!rows[0]) return undefined;
+  const r = rows[0];
+  return {
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    address: r.address,
+    phone: r.phone,
+    openTime: r.openTime,
+    closeTime: r.closeTime,
+  };
 }
 
+// 2. Barber Staff - Direct from Neon Postgres (Role = 'staff')
 export async function getBarbers(branchId?: string): Promise<BarberItem[]> {
-  if (branchId) {
-    return store.barbers.filter((b) => b.branchId === branchId);
-  }
-  return store.barbers;
+  const condition = branchId
+    ? and(eq(users.role, "staff"), eq(users.branchId, branchId))
+    : eq(users.role, "staff");
+
+  const rows = await db.select().from(users).where(condition);
+  return rows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone || "-",
+    branchId: u.branchId || "",
+    avatarUrl:
+      u.avatarUrl ||
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    specialty: "Professional Barberman",
+    rating: 4.9,
+  }));
 }
 
-export async function getBarberById(id: string): Promise<BarberItem | undefined> {
-  return store.barbers.find((b) => b.id === id);
-}
-
+// 3. Layanan (Services) - Direct from Neon Postgres
 export async function getServices(): Promise<ServiceItem[]> {
-  return store.services;
+  const rows = await db
+    .select()
+    .from(services)
+    .where(eq(services.isActive, true))
+    .orderBy(services.price);
+
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description || "",
+    durationMinutes: s.durationMinutes,
+    price: s.price,
+  }));
 }
 
+// 4. Antrean & Booking (Bookings) - Direct from Neon Postgres
 export async function getBookings(filters?: {
   branchId?: string;
   status?: string;
   date?: string;
 }): Promise<BookingRecord[]> {
-  let list = store.bookings;
+  const conditions = [];
+
   if (filters?.branchId) {
-    list = list.filter((b) => b.branchId === filters.branchId);
+    conditions.push(eq(bookings.branchId, filters.branchId));
   }
   if (filters?.status) {
-    list = list.filter((b) => b.status === filters.status);
+    conditions.push(eq(bookings.status, filters.status as any));
   }
   if (filters?.date) {
-    list = list.filter((b) => b.bookingDate === filters.date);
+    conditions.push(eq(bookings.bookingDate, filters.date));
   }
-  return [...list].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
 
-export async function getBookingById(id: string): Promise<BookingRecord | undefined> {
-  return store.bookings.find((b) => b.id === id);
+  const query = db
+    .select({
+      booking: bookings,
+      barberName: users.name,
+    })
+    .from(bookings)
+    .leftJoin(users, eq(bookings.barberId, users.id))
+    .orderBy(desc(bookings.createdAt));
+
+  const rows = conditions.length > 0 ? await query.where(and(...conditions)) : await query;
+
+  return rows.map(({ booking: b, barberName }) => ({
+    id: b.id,
+    branchId: b.branchId,
+    barberId: b.barberId,
+    barberName: barberName || "Barber",
+    customerId: b.customerId || undefined,
+    customerName: b.customerName,
+    customerPhone: b.customerPhone || undefined,
+    queueNumber: b.queueNumber,
+    bookingType: b.bookingType,
+    bookingDate: b.bookingDate,
+    slotTime: b.slotTime || undefined,
+    status: b.status,
+    totalPrice: b.totalPrice,
+    paymentStatus: b.paymentStatus,
+    paymentMethod: b.paymentMethod || undefined,
+    services: ["Gentleman Grooming"],
+    createdAt: b.createdAt.toISOString(),
+  }));
 }
 
 export async function createBooking(data: {
@@ -93,24 +143,27 @@ export async function createBooking(data: {
   slotTime?: string;
   serviceIds: string[];
 }): Promise<BookingRecord> {
-  const branch = store.branches.find((b) => b.id === data.branchId);
-  const barber = store.barbers.find((b) => b.id === data.barberId);
-  const selectedServices = store.services.filter((s) => data.serviceIds.includes(s.id));
-  
-  const totalPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
+  const branch = await getBranchById(data.branchId);
+  const barberRows = await db.select().from(users).where(eq(users.id, data.barberId)).limit(1);
+  const barber = barberRows[0];
 
-  // Validasi slot online: Cegah duplikat booking dan cegah slot yang sudah lewat
+  // 1. Validasi slot online: Cegah duplikat booking dan waktu terlewat
   if (data.bookingType === "online_slot" && data.slotTime) {
-    const isAlreadyBooked = store.bookings.some(
-      (b) =>
-        b.branchId === data.branchId &&
-        b.barberId === data.barberId &&
-        b.bookingDate === data.bookingDate &&
-        b.slotTime === data.slotTime &&
-        b.status !== "cancelled"
-    );
-    if (isAlreadyBooked) {
-      throw new Error(`Slot jam ${data.slotTime} sudah dipesan oleh pelanggan lain. Silakan pilih slot lain.`);
+    const existing = await db
+      .select()
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.branchId, data.branchId),
+          eq(bookings.barberId, data.barberId),
+          eq(bookings.bookingDate, data.bookingDate),
+          eq(bookings.slotTime, data.slotTime),
+          sql`${bookings.status} != 'cancelled'`
+        )
+      );
+
+    if (existing.length > 0) {
+      throw new Error(`Slot jam ${data.slotTime} sudah dipesan di database oleh pelanggan lain.`);
     }
 
     const now = new Date();
@@ -125,35 +178,69 @@ export async function createBooking(data: {
     }
   }
 
-  // Generate queue number: Branch initial + sequence today
+  // 2. Hitung nomor antrean harian cabang di database
+  const countRes = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(bookings)
+    .where(and(eq(bookings.branchId, data.branchId), eq(bookings.bookingDate, data.bookingDate)));
+
+  const totalToday = Number(countRes[0]?.count || 0);
   const branchPrefix = (branch?.name || "B").charAt(0).toUpperCase();
-  const todayBookings = store.bookings.filter(
-    (b) => b.branchId === data.branchId && b.bookingDate === data.bookingDate
-  );
-  const queueSequence = String(todayBookings.length + 1).padStart(2, "0");
+  const queueSequence = String(totalToday + 1).padStart(2, "0");
   const queueNumber = `${branchPrefix}-${queueSequence}`;
 
-  const newBooking: BookingRecord = {
-    id: `book-${Date.now()}`,
-    branchId: data.branchId,
-    barberId: data.barberId,
-    barberName: barber?.name || "Barber",
-    customerId: data.customerId,
-    customerName: data.customerName,
-    customerPhone: data.customerPhone,
-    queueNumber,
-    bookingType: data.bookingType,
-    bookingDate: data.bookingDate,
-    slotTime: data.slotTime,
-    status: "waiting",
-    totalPrice,
-    paymentStatus: "unpaid",
-    services: selectedServices.map((s) => s.name),
-    createdAt: new Date().toISOString(),
-  };
+  // 3. Hitung total tarif layanan
+  let totalPrice = 85000;
+  if (data.serviceIds.length > 0) {
+    const srvRows = await db
+      .select()
+      .from(services)
+      .where(or(...data.serviceIds.map((id) => eq(services.id, id))));
+    if (srvRows.length > 0) {
+      totalPrice = srvRows.reduce((sum, s) => sum + s.price, 0);
+    }
+  }
 
-  store.bookings.unshift(newBooking);
-  return newBooking;
+  // 4. Insert langsung ke Neon Postgres
+  const inserted = await db
+    .insert(bookings)
+    .values({
+      branchId: data.branchId,
+      barberId: data.barberId,
+      customerId: data.customerId || null,
+      customerName: data.customerName,
+      customerPhone: data.customerPhone || null,
+      queueNumber,
+      bookingType: data.bookingType,
+      bookingDate: data.bookingDate,
+      slotTime: data.slotTime || null,
+      status: "waiting",
+      totalPrice,
+      paymentStatus: "unpaid",
+    })
+    .returning();
+
+  const b = inserted[0];
+
+  return {
+    id: b.id,
+    branchId: b.branchId,
+    barberId: b.barberId,
+    barberName: barber?.name || "Barber",
+    customerId: b.customerId || undefined,
+    customerName: b.customerName,
+    customerPhone: b.customerPhone || undefined,
+    queueNumber: b.queueNumber,
+    bookingType: b.bookingType,
+    bookingDate: b.bookingDate,
+    slotTime: b.slotTime || undefined,
+    status: b.status,
+    totalPrice: b.totalPrice,
+    paymentStatus: b.paymentStatus,
+    paymentMethod: b.paymentMethod || undefined,
+    services: ["Layanan Terpilih"],
+    createdAt: b.createdAt.toISOString(),
+  };
 }
 
 export async function updateBookingStatus(
@@ -161,25 +248,84 @@ export async function updateBookingStatus(
   status: "waiting" | "in_progress" | "completed" | "cancelled",
   paymentMethod?: "cash" | "qris"
 ): Promise<BookingRecord | null> {
-  const booking = store.bookings.find((b) => b.id === id);
-  if (!booking) return null;
-
-  booking.status = status;
+  const updateData: any = { status };
   if (status === "completed") {
-    booking.paymentStatus = "paid";
-    if (paymentMethod) booking.paymentMethod = paymentMethod;
+    updateData.paymentStatus = "paid";
+    if (paymentMethod) updateData.paymentMethod = paymentMethod;
+    updateData.completedAt = new Date();
   }
-  return { ...booking };
+  if (status === "in_progress") {
+    updateData.startedAt = new Date();
+  }
+
+  const updated = await db
+    .update(bookings)
+    .set(updateData)
+    .where(eq(bookings.id, id))
+    .returning();
+
+  if (!updated[0]) return null;
+  const b = updated[0];
+
+  return {
+    id: b.id,
+    branchId: b.branchId,
+    barberId: b.barberId,
+    barberName: "Barber",
+    customerId: b.customerId || undefined,
+    customerName: b.customerName,
+    customerPhone: b.customerPhone || undefined,
+    queueNumber: b.queueNumber,
+    bookingType: b.bookingType,
+    bookingDate: b.bookingDate,
+    slotTime: b.slotTime || undefined,
+    status: b.status,
+    totalPrice: b.totalPrice,
+    paymentStatus: b.paymentStatus,
+    paymentMethod: b.paymentMethod || undefined,
+    services: ["Layanan Terpilih"],
+    createdAt: b.createdAt.toISOString(),
+  };
 }
 
+// 5. Haircut Blueprint (Resep Potong) - Direct from Neon Postgres
 export async function getHaircutRecipes(query?: string): Promise<HaircutBlueprint[]> {
-  if (!query) return store.recipes;
-  const q = query.toLowerCase();
-  return store.recipes.filter(
-    (r) =>
-      r.customerName.toLowerCase().includes(q) ||
-      (r.customerId && r.customerId.toLowerCase().includes(q))
-  );
+  const rows = query
+    ? await db
+        .select({
+          recipe: haircutRecords,
+          barberName: users.name,
+        })
+        .from(haircutRecords)
+        .leftJoin(users, eq(haircutRecords.barberId, users.id))
+        .where(ilike(haircutRecords.customerName, `%${query.trim()}%`))
+        .orderBy(desc(haircutRecords.createdAt))
+    : await db
+        .select({
+          recipe: haircutRecords,
+          barberName: users.name,
+        })
+        .from(haircutRecords)
+        .leftJoin(users, eq(haircutRecords.barberId, users.id))
+        .orderBy(desc(haircutRecords.createdAt));
+
+  return rows.map(({ recipe: r, barberName }) => ({
+    id: r.id,
+    customerId: r.customerId || undefined,
+    customerName: r.customerName,
+    barberId: r.barberId,
+    barberName: barberName || "Barber",
+    bookingId: r.bookingId || undefined,
+    sideTechnique: r.sideTechnique || "-",
+    baselineGuard: r.baselineGuard || "-",
+    topStyle: r.topStyle || "-",
+    topTechnique: r.topTechnique || "-",
+    neckline: r.neckline || "-",
+    headQuirks: r.headQuirks || [],
+    stylingProduct: r.stylingProduct || "-",
+    notes: r.notes || undefined,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 export async function saveHaircutRecipe(data: {
@@ -196,55 +342,208 @@ export async function saveHaircutRecipe(data: {
   stylingProduct: string;
   notes?: string;
 }): Promise<HaircutBlueprint> {
-  const recipe: HaircutBlueprint = {
-    id: `rcp-${Date.now()}`,
-    customerName: data.customerName,
-    customerId: data.customerId,
-    barberId: data.barberId,
-    barberName: data.barberName,
-    sideTechnique: data.sideTechnique,
-    baselineGuard: data.baselineGuard,
-    topStyle: data.topStyle,
-    topTechnique: data.topTechnique,
-    neckline: data.neckline,
-    headQuirks: data.headQuirks,
-    stylingProduct: data.stylingProduct,
-    notes: data.notes,
-    createdAt: new Date().toISOString(),
-  };
+  const inserted = await db
+    .insert(haircutRecords)
+    .values({
+      customerName: data.customerName,
+      customerId: data.customerId || null,
+      barberId: data.barberId,
+      sideTechnique: data.sideTechnique,
+      baselineGuard: data.baselineGuard,
+      topStyle: data.topStyle,
+      topTechnique: data.topTechnique,
+      neckline: data.neckline,
+      headQuirks: data.headQuirks,
+      stylingProduct: data.stylingProduct,
+      notes: data.notes || null,
+    })
+    .returning();
 
-  store.recipes.unshift(recipe);
-  return recipe;
+  const r = inserted[0];
+  return {
+    id: r.id,
+    customerName: r.customerName,
+    customerId: r.customerId || undefined,
+    barberId: r.barberId,
+    barberName: data.barberName,
+    sideTechnique: r.sideTechnique || "-",
+    baselineGuard: r.baselineGuard || "-",
+    topStyle: r.topStyle || "-",
+    topTechnique: r.topTechnique || "-",
+    neckline: r.neckline || "-",
+    headQuirks: r.headQuirks || [],
+    stylingProduct: r.stylingProduct || "-",
+    notes: r.notes || undefined,
+    createdAt: r.createdAt.toISOString(),
+  };
 }
 
+// 6. Owner Analytics - Direct from Neon Postgres
 export async function getOwnerAnalytics() {
   const today = new Date().toISOString().split("T")[0];
-  
-  const branchSummaries = store.branches.map((branch) => {
-    const branchBookings = store.bookings.filter((b) => b.branchId === branch.id);
-    const todayBookings = branchBookings.filter((b) => b.bookingDate === today);
-    const completed = branchBookings.filter((b) => b.status === "completed");
-    const revenue = completed.reduce((sum, b) => sum + b.totalPrice, 0);
+  const allBranches = await getBranches();
+  const allBookings = await db.select().from(bookings);
+
+  const branchSummaries = allBranches.map((branch) => {
+    const bList = allBookings.filter((b) => b.branchId === branch.id);
+    const todayList = bList.filter((b) => b.bookingDate === today);
+    const completedList = bList.filter((b) => b.status === "completed");
+    const revenue = completedList.reduce((sum, b) => sum + b.totalPrice, 0);
 
     return {
       branchId: branch.id,
       name: branch.name,
       slug: branch.slug,
-      todayQueueCount: todayBookings.length,
-      activeWaiting: todayBookings.filter((b) => b.status === "waiting").length,
-      inProgress: todayBookings.filter((b) => b.status === "in_progress").length,
-      totalCompleted: completed.length,
+      todayQueueCount: todayList.length,
+      activeWaiting: todayList.filter((b) => b.status === "waiting").length,
+      inProgress: todayList.filter((b) => b.status === "in_progress").length,
+      totalCompleted: completedList.length,
       revenue,
     };
   });
 
   const totalRevenue = branchSummaries.reduce((sum, b) => sum + b.revenue, 0);
-  const totalBookings = store.bookings.length;
+  const totalBookings = allBookings.length;
 
   return {
     today,
     totalRevenue,
     totalBookings,
     branchSummaries,
+  };
+}
+
+// 7. Pengguna & Kredensial (Users) - Direct from Neon Postgres
+export async function getUsers(): Promise<UserAccount[]> {
+  const rows = await db.select().from(users).orderBy(desc(users.createdAt));
+  return rows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    passwordHash: u.passwordHash,
+    role: u.role,
+    branchId: u.branchId,
+    phone: u.phone || undefined,
+    createdAt: u.createdAt.toISOString(),
+  }));
+}
+
+export async function getUserByEmail(emailOrUsername: string): Promise<UserAccount | undefined> {
+  const q = emailOrUsername.trim().toLowerCase();
+  const rows = await db
+    .select()
+    .from(users)
+    .where(or(eq(users.email, q), ilike(users.name, q)))
+    .limit(1);
+
+  if (!rows[0]) return undefined;
+  const u = rows[0];
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    passwordHash: u.passwordHash,
+    role: u.role,
+    branchId: u.branchId,
+    phone: u.phone || undefined,
+    createdAt: u.createdAt.toISOString(),
+  };
+}
+
+export async function createUser(data: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: "owner" | "admin" | "staff" | "customer";
+  branchId?: string | null;
+  phone?: string;
+}): Promise<UserAccount> {
+  const inserted = await db
+    .insert(users)
+    .values({
+      name: data.name,
+      email: data.email.toLowerCase(),
+      passwordHash: data.passwordHash,
+      role: data.role,
+      branchId: data.branchId || null,
+      phone: data.phone || null,
+    })
+    .returning();
+
+  const u = inserted[0];
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    passwordHash: u.passwordHash,
+    role: u.role,
+    branchId: u.branchId,
+    phone: u.phone || undefined,
+    createdAt: u.createdAt.toISOString(),
+  };
+}
+
+export async function deleteUser(id: string): Promise<boolean> {
+  const deleted = await db.delete(users).where(eq(users.id, id)).returning();
+  return deleted.length > 0;
+}
+
+// 8. Tambah Cabang - Direct from Neon Postgres
+export async function createBranch(data: {
+  name: string;
+  address: string;
+  phone: string;
+  openTime: string;
+  closeTime: string;
+}): Promise<BranchItem> {
+  const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const inserted = await db
+    .insert(branches)
+    .values({
+      name: data.name,
+      slug,
+      address: data.address,
+      phone: data.phone,
+      openTime: data.openTime || "09:00",
+      closeTime: data.closeTime || "21:00",
+    })
+    .returning();
+
+  const b = inserted[0];
+  return {
+    id: b.id,
+    name: b.name,
+    slug: b.slug,
+    address: b.address,
+    phone: b.phone,
+    openTime: b.openTime,
+    closeTime: b.closeTime,
+  };
+}
+
+// 9. Tambah Layanan - Direct from Neon Postgres
+export async function createService(data: {
+  name: string;
+  description: string;
+  durationMinutes: number;
+  price: number;
+}): Promise<ServiceItem> {
+  const inserted = await db
+    .insert(services)
+    .values({
+      name: data.name,
+      description: data.description,
+      durationMinutes: Number(data.durationMinutes) || 45,
+      price: Number(data.price) || 50000,
+    })
+    .returning();
+
+  const s = inserted[0];
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description || "",
+    durationMinutes: s.durationMinutes,
+    price: s.price,
   };
 }
