@@ -142,28 +142,6 @@ export default async function LoginPage({
           </Link>
         </div>
       </div>
-
-      {/* Info Kredensial Awal untuk Evaluasi / Admin */}
-      <div className="bg-[#16181C] border border-[#262A31] rounded-2xl p-4 space-y-2 text-[11px] text-zinc-400">
-        <div className="flex items-center gap-1.5 text-amber-400 font-bold">
-          <Info className="w-3.5 h-3.5" />
-          <span>Daftar Kredensial Awal Sistem:</span>
-        </div>
-        <ul className="space-y-1 pl-5 list-disc text-zinc-300">
-          <li>
-            <strong>Admin Operasional</strong>: <code className="text-amber-300">admin@barber.com</code> / <code className="text-amber-300">admin123</code>
-          </li>
-          <li>
-            <strong>Owner Bisnis</strong>: <code className="text-amber-300">owner@barber.com</code> / <code className="text-amber-300">owner123</code> (Mode monitor)
-          </li>
-          <li>
-            <strong>Kasir / Barber Cabang</strong>: <code className="text-amber-300">kasir.kemang@barber.com</code> / <code className="text-amber-300">kasir123</code>
-          </li>
-          <li>
-            <strong>Pelanggan Terdaftar</strong>: <code className="text-amber-300">budi@gmail.com</code> / <code className="text-amber-300">budi123</code>
-          </li>
-        </ul>
-      </div>
     </div>
   );
 }

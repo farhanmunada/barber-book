@@ -39,8 +39,8 @@ export default async function RootLayout({
                 <span className="font-bold tracking-wider text-base text-white group-hover:text-amber-400 transition-colors">
                   BARBER<span className="text-amber-500">CRAFT</span>
                 </span>
-                <span className="text-[10px] text-zinc-400 uppercase tracking-widest -mt-1">
-                  Est. 2024 &bull; 3 Branches
+                <span className="text-[10px] text-zinc-400 tracking-wide -mt-0.5">
+                  Potong Rambut Tanpa Antre
                 </span>
               </div>
             </Link>
@@ -51,20 +51,20 @@ export default async function RootLayout({
                 href="/book"
                 className="px-3 py-2 rounded-md hover:bg-[#252A31] text-zinc-300 hover:text-white transition-colors"
               >
-                Pesan Slot
+                Booking Sekarang
               </Link>
               <Link
                 href="/queue"
                 className="px-3 py-2 rounded-md hover:bg-[#252A31] text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5"
               >
                 <Clock className="w-4 h-4 text-amber-500" />
-                Live Antrean
+                Cek Antrean
               </Link>
               <Link
                 href="/profile/history"
                 className="px-3 py-2 rounded-md hover:bg-[#252A31] text-zinc-300 hover:text-white transition-colors"
               >
-                Resep Potong
+                Riwayat Model
               </Link>
             </nav>
 

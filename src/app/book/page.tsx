@@ -43,13 +43,13 @@ export default async function BookPage({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-semibold">
             <Scissors className="w-3.5 h-3.5 -rotate-45" />
-            <span>Reservasi Online Mandiri</span>
+            <span>Booking Jadwal Online</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">
-            Pesan Jadwal Potong Rambut
+            Pilih Jadwal Potong Rambut
           </h1>
           <p className="text-sm text-zinc-400">
-            Pilih cabang, layanan, barber favorit, dan jam kedatangan Anda dalam 5 ketukan mudah.
+            Pilih cabang, layanan, barber favorit, dan jam kedatangan yang pas buatmu.
           </p>
         </div>
 
