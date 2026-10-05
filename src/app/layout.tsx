@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { Scissors, ShieldCheck, Clock, User, Store } from "lucide-react";
+import { Scissors, ShieldCheck, Clock, User, Store, LogOut } from "lucide-react";
 import { getSession } from "@/lib/auth";
+import { logoutAction } from "@/app/actions/auth";
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "BARBERCRAFT | Multi-Branch Booking & Digital Queue",
@@ -17,8 +25,8 @@ export default async function RootLayout({
   const session = await getSession();
 
   return (
-    <html lang="id" className="dark">
-      <body className="bg-[#121316] text-[#F3F4F6] min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+    <html lang="id" className={`dark ${jakarta.variable}`}>
+      <body className="bg-[#121316] text-[#F3F4F6] min-h-screen flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-black">
         {/* Navigation Bar */}
         <header className="sticky top-0 z-50 bg-[#1A1D21]/95 backdrop-blur border-b border-[#2D3139]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -60,7 +68,7 @@ export default async function RootLayout({
               </Link>
             </nav>
 
-            {/* Auth / Role Indicator */}
+            {/* Auth / Role Indicator + Logout */}
             <div className="flex items-center gap-3">
               {session ? (
                 <div className="flex items-center gap-2">
@@ -82,6 +90,18 @@ export default async function RootLayout({
                     <User className="w-3.5 h-3.5 text-amber-500" />
                     <span>{session.name.split(" ")[0]}</span>
                   </Link>
+
+                  {/* Explicit Logout Button */}
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold transition-colors"
+                      title="Keluar / Logout"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Logout</span>
+                    </button>
+                  </form>
                 </div>
               ) : (
                 <Link

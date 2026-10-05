@@ -99,6 +99,32 @@ export async function createBooking(data: {
   
   const totalPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
+  // Validasi slot online: Cegah duplikat booking dan cegah slot yang sudah lewat
+  if (data.bookingType === "online_slot" && data.slotTime) {
+    const isAlreadyBooked = store.bookings.some(
+      (b) =>
+        b.branchId === data.branchId &&
+        b.barberId === data.barberId &&
+        b.bookingDate === data.bookingDate &&
+        b.slotTime === data.slotTime &&
+        b.status !== "cancelled"
+    );
+    if (isAlreadyBooked) {
+      throw new Error(`Slot jam ${data.slotTime} sudah dipesan oleh pelanggan lain. Silakan pilih slot lain.`);
+    }
+
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    if (data.bookingDate === todayStr) {
+      const [sh, sm] = data.slotTime.split(":").map(Number);
+      const slotMinutes = sh * 60 + sm;
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (slotMinutes <= currentMinutes) {
+        throw new Error(`Slot jam ${data.slotTime} sudah terlewat untuk hari ini.`);
+      }
+    }
+  }
+
   // Generate queue number: Branch initial + sequence today
   const branchPrefix = (branch?.name || "B").charAt(0).toUpperCase();
   const todayBookings = store.bookings.filter(

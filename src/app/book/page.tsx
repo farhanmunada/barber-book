@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getBranches, getBarbers, getServices } from "@/lib/store";
+import { getBranches, getBarbers, getServices, getBookings } from "@/lib/store";
 import { getSession } from "@/lib/auth";
 import { BookingWizard } from "@/components/booking/booking-wizard";
 import { Scissors } from "lucide-react";
@@ -12,11 +12,12 @@ export default async function BookPage({
   searchParams: Promise<{ branch?: string }>;
 }) {
   const resolvedParams = await searchParams;
-  const [branches, barbers, services, session] = await Promise.all([
+  const [branches, barbers, services, session, bookings] = await Promise.all([
     getBranches(),
     getBarbers(),
     getServices(),
     getSession(),
+    getBookings(),
   ]);
 
   return (
@@ -40,6 +41,7 @@ export default async function BookPage({
           branches={branches}
           barbers={barbers}
           services={services}
+          existingBookings={bookings}
           initialBranchId={resolvedParams.branch}
           initialCustomerName={session?.role === "customer" ? session.name : ""}
         />

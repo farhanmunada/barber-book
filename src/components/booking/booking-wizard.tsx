@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BranchItem, BarberItem, ServiceItem } from "@/lib/mock-data";
+import { BranchItem, BarberItem, ServiceItem, BookingRecord } from "@/lib/mock-data";
 import { TIME_SLOTS } from "@/lib/constants";
 import { submitOnlineBookingAction } from "@/app/actions/booking";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,12 +15,14 @@ import {
   AlertCircle,
   Phone,
   Sparkles,
+  Lock,
 } from "lucide-react";
 
 interface BookingWizardProps {
   branches: BranchItem[];
   barbers: BarberItem[];
   services: ServiceItem[];
+  existingBookings?: BookingRecord[];
   initialBranchId?: string;
   initialCustomerName?: string;
   initialCustomerPhone?: string;
@@ -30,6 +32,7 @@ export function BookingWizard({
   branches,
   barbers,
   services,
+  existingBookings = [],
   initialBranchId,
   initialCustomerName = "",
   initialCustomerPhone = "",
@@ -312,28 +315,76 @@ export function BookingWizard({
           })}
         </div>
 
-        {/* Time Slots Grid */}
+        {/* Time Slots Grid (Dengan Proteksi Slot Terlewat & Slot Penuh) */}
         <div className="bg-[#16181C] border border-[#2D3139] rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-zinc-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-zinc-400 gap-1">
             <span>Pilih jam kedatangan ({selectedDate}):</span>
-            <span className="text-amber-400 font-medium">Slot per 45 menit</span>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="flex items-center gap-1 text-zinc-400">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> Tersedia
+              </span>
+              <span className="flex items-center gap-1 text-red-400">
+                <span className="w-2 h-2 rounded-full bg-red-500" /> Penuh
+              </span>
+              <span className="flex items-center gap-1 text-zinc-600">
+                <span className="w-2 h-2 rounded-full bg-zinc-700" /> Terlewat
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
             {TIME_SLOTS.map((slot) => {
               const isSelected = selectedSlot === slot;
+
+              // 1. Cek apakah slot sudah lewat untuk hari ini
+              const now = new Date();
+              const todayStr = now.toISOString().split("T")[0];
+              const isDateToday = selectedDate === todayStr;
+              const [slotH, slotM] = slot.split(":").map(Number);
+              const slotMinutes = slotH * 60 + slotM;
+              const currentMinutes = now.getHours() * 60 + now.getMinutes();
+              const isPast = isDateToday && slotMinutes <= currentMinutes;
+
+              // 2. Cek apakah slot sudah dibooking di barber & cabang & tanggal ini
+              const isBooked = existingBookings.some(
+                (b) =>
+                  b.branchId === selectedBranchId &&
+                  b.barberId === selectedBarberId &&
+                  b.bookingDate === selectedDate &&
+                  b.slotTime === slot &&
+                  b.status !== "cancelled"
+              );
+
+              const isLocked = isPast || isBooked;
+
               return (
                 <button
                   key={slot}
                   type="button"
-                  onClick={() => setSelectedSlot(slot)}
-                  className={`py-2.5 px-3 rounded-lg text-sm font-semibold transition-all border ${
-                    isSelected
-                      ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20"
+                  disabled={isLocked}
+                  onClick={() => !isLocked && setSelectedSlot(slot)}
+                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition-all border flex flex-col items-center justify-center gap-0.5 ${
+                    isBooked
+                      ? "bg-red-500/10 border-red-500/30 text-red-400 opacity-60 cursor-not-allowed"
+                      : isPast
+                      ? "bg-[#141518] border-[#22252C] text-zinc-600 opacity-40 cursor-not-allowed line-through"
+                      : isSelected
+                      ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
                       : "bg-[#1F232A] border-[#2D3139] text-zinc-200 hover:border-amber-500/40"
                   }`}
                 >
-                  {slot}
+                  <span className="text-sm">{slot}</span>
+                  {isBooked ? (
+                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center gap-0.5">
+                      <Lock className="w-2.5 h-2.5" /> Penuh
+                    </span>
+                  ) : isPast ? (
+                    <span className="text-[10px] text-zinc-600 uppercase tracking-wider">
+                      Terlewat
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-zinc-400">Tersedia</span>
+                  )}
                 </button>
               );
             })}

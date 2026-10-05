@@ -67,4 +67,33 @@ const branchRevenue = aggregateBranchRevenue([
 assert.equal(branchRevenue, 2700000);
 console.log("✓ Test 4 Passed: Multi-branch revenue aggregator verified.");
 
+// 5. Slot Lock Validation (Past slot & duplicate slot prevention)
+function validateSlotAvailability(slotTime, bookingDate, existingSlots, currentHours, currentMins) {
+  const isDuplicate = existingSlots.includes(slotTime);
+  if (isDuplicate) return { allowed: false, reason: "Penuh" };
+
+  const [h, m] = slotTime.split(":").map(Number);
+  const slotMinutes = h * 60 + m;
+  const currentMinutes = currentHours * 60 + currentMins;
+
+  if (slotMinutes <= currentMinutes) {
+    return { allowed: false, reason: "Terlewat" };
+  }
+  return { allowed: true, reason: "Tersedia" };
+}
+
+const check1 = validateSlotAvailability("11:30", "2026-10-05", ["11:30"], 10, 0);
+assert.equal(check1.allowed, false);
+assert.equal(check1.reason, "Penuh");
+
+const check2 = validateSlotAvailability("10:00", "2026-10-05", [], 12, 0);
+assert.equal(check2.allowed, false);
+assert.equal(check2.reason, "Terlewat");
+
+const check3 = validateSlotAvailability("16:00", "2026-10-05", [], 12, 0);
+assert.equal(check3.allowed, true);
+assert.equal(check3.reason, "Tersedia");
+
+console.log("✓ Test 5 Passed: Slot locking (past time & duplicate prevention) verified.");
+
 console.log("\nALL TESTS GREEN!");

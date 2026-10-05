@@ -31,8 +31,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: ["var(--font-heading)", "sans-serif"],
-        sans: ["var(--font-sans)", "sans-serif"],
+        heading: ["var(--font-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
     },
   },
