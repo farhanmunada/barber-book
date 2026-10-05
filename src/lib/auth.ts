@@ -14,6 +14,7 @@ export interface SessionPayload {
   email: string;
   role: "owner" | "admin" | "staff" | "customer";
   branchId?: string | null;
+  phone?: string | null;
 }
 
 export async function hashPassword(plain: string): Promise<string> {

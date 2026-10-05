@@ -10,7 +10,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionToken = request.cookies.get("barber_session")?.value;
 
-  // Protect all /dashboard routes
+  // 1. Guard /book (Pelanggan Wajib Login untuk Reservasi Online)
+  if (pathname.startsWith("/book")) {
+    if (!sessionToken) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("from", "/book");
+      loginUrl.searchParams.set("reason", "booking_required");
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 2. Guard /dashboard routes
   if (pathname.startsWith("/dashboard")) {
     if (!sessionToken) {
       const loginUrl = new URL("/login", request.url);
@@ -25,10 +35,9 @@ export async function middleware(request: NextRequest) {
       const role = payload.role as string;
       const branchId = payload.branchId as string | undefined;
 
-      // 1. Guard /dashboard/admin (Only Admin can manage branches, services, staff accounts)
+      // Guard /dashboard/admin (Only Admin)
       if (pathname.startsWith("/dashboard/admin")) {
         if (role !== "admin") {
-          // If owner or staff tries to open admin, redirect to their respective view
           if (role === "owner") {
             return NextResponse.redirect(new URL("/dashboard/owner", request.url));
           }
@@ -41,7 +50,7 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      // 2. Guard /dashboard/owner (Owner and Admin can view analytics; Staff & Customer cannot)
+      // Guard /dashboard/owner (Owner and Admin only)
       if (pathname.startsWith("/dashboard/owner")) {
         if (role !== "owner" && role !== "admin") {
           if (role === "staff") {
@@ -53,7 +62,7 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      // 3. Guard /dashboard/branch (Staff and Admin only; Customer and pure Owner cannot tamper POS)
+      // Guard /dashboard/branch (Staff and Admin only)
       if (pathname.startsWith("/dashboard/branch")) {
         if (role === "customer") {
           return NextResponse.redirect(new URL("/book", request.url));
@@ -71,5 +80,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/book"],
 };

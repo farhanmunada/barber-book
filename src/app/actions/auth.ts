@@ -28,6 +28,7 @@ export async function loginWithCredentialsAction(formData: FormData): Promise<vo
     email: user.email,
     role: user.role,
     branchId: user.branchId,
+    phone: user.phone || null,
   };
 
   await setSession(sessionPayload);
@@ -73,6 +74,39 @@ export async function registerCustomerAction(formData: FormData): Promise<void> 
     name: newUser.name,
     email: newUser.email,
     role: "customer",
+    phone: newUser.phone || null,
+  };
+
+  await setSession(sessionPayload);
+  redirect("/book");
+}
+
+export async function loginWithGoogleAction(formData?: FormData): Promise<void> {
+  const googleEmail = formData?.get("googleEmail")?.toString().trim().toLowerCase() || "pelanggan.google@gmail.com";
+  const googleName = formData?.get("googleName")?.toString().trim() || "Pelanggan Google";
+
+  // Check if user exists in database
+  let user = await getUserByEmail(googleEmail);
+
+  if (!user) {
+    // Auto-register google user as customer in Neon Postgres
+    const randomPass = Math.random().toString(36).slice(-8);
+    const passwordHash = await hashPassword(randomPass);
+    user = await createUser({
+      name: googleName,
+      email: googleEmail,
+      passwordHash,
+      role: "customer",
+      phone: "0812-GoogleAuth",
+    });
+  }
+
+  const sessionPayload: SessionPayload = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    role: "customer",
+    phone: user.phone || null,
   };
 
   await setSession(sessionPayload);

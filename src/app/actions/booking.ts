@@ -7,23 +7,38 @@ import {
   saveHaircutRecipe,
   getHaircutRecipes,
 } from "@/lib/store";
+import { getSession } from "@/lib/auth";
 
 export async function submitOnlineBookingAction(data: {
   branchId: string;
   barberId: string;
-  customerName: string;
-  customerPhone: string;
+  customerName?: string;
+  customerPhone?: string;
   bookingDate: string;
   slotTime: string;
   serviceIds: string[];
 }) {
-  if (!data.branchId || !data.barberId || !data.customerName || !data.slotTime || !data.serviceIds.length) {
-    return { success: false, error: "Semua data wajib dipilih." };
+  const session = await getSession();
+  if (!session) {
+    return {
+      success: false,
+      error: "Wajib login ke akun pelanggan untuk memesan jadwal potong rambut online.",
+    };
+  }
+
+  const customerName = session.name || data.customerName || "Pelanggan";
+  const customerPhone = data.customerPhone || session.phone || "0812-xxx";
+
+  if (!data.branchId || !data.barberId || !data.slotTime || !data.serviceIds.length) {
+    return { success: false, error: "Cabang, barber, jam slot, dan layanan wajib dipilih." };
   }
 
   try {
     const booking = await createBooking({
       ...data,
+      customerId: session.userId,
+      customerName,
+      customerPhone,
       bookingType: "online_slot",
     });
 

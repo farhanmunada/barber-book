@@ -428,6 +428,27 @@ export async function getUsers(): Promise<UserAccount[]> {
   }));
 }
 
+export async function getUserById(id: string): Promise<UserAccount | undefined> {
+  const rows = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  if (!rows[0]) return undefined;
+  const u = rows[0];
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    passwordHash: u.passwordHash,
+    role: u.role,
+    branchId: u.branchId,
+    phone: u.phone || undefined,
+    createdAt: u.createdAt.toISOString(),
+  };
+}
+
 export async function getUserByEmail(emailOrUsername: string): Promise<UserAccount | undefined> {
   const q = emailOrUsername.trim().toLowerCase();
   const rows = await db
