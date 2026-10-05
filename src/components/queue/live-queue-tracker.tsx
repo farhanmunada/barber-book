@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BranchItem, BookingRecord } from "@/lib/mock-data";
+import { BranchItem, BookingRecord } from "@/lib/types";
 import { Clock, Scissors, UserCheck, AlertCircle, Sparkles, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 

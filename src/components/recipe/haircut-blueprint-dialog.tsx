@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { BARBER_ANATOMY } from "@/lib/constants";
 import { saveHaircutBlueprintAction } from "@/app/actions/booking";
-import { Scissors, Check, X, Sparkles, Copy, AlertCircle } from "lucide-react";
-import { HaircutBlueprint } from "@/lib/mock-data";
+import { Scissors, Check, X, Sparkles, Copy } from "lucide-react";
+import { HaircutBlueprint } from "@/lib/types";
+import { AnatomyChipGroup } from "./anatomy-chip-group";
 
 interface HaircutBlueprintDialogProps {
   isOpen: boolean;
@@ -29,7 +30,6 @@ export function HaircutBlueprintDialog({
   existingRecipe,
   onSaved,
 }: HaircutBlueprintDialogProps) {
-  // Preset or initial state
   const [sideTechnique, setSideTechnique] = useState<string>(
     existingRecipe?.sideTechnique || "Low Fade"
   );
@@ -59,11 +59,9 @@ export function HaircutBlueprintDialog({
   if (!isOpen) return null;
 
   const toggleHeadQuirk = (quirkLabel: string) => {
-    if (headQuirks.includes(quirkLabel)) {
-      setHeadQuirks(headQuirks.filter((q) => q !== quirkLabel));
-    } else {
-      setHeadQuirks([...headQuirks, quirkLabel]);
-    }
+    setHeadQuirks((prev) =>
+      prev.includes(quirkLabel) ? prev.filter((q) => q !== quirkLabel) : [...prev, quirkLabel]
+    );
   };
 
   const copyLastRecipe = () => {
@@ -141,7 +139,7 @@ export function HaircutBlueprintDialog({
           </button>
         </div>
 
-        {/* 1-Tap Copy Previous Recipe Button if available */}
+        {/* 1-Tap Copy Previous Recipe */}
         {existingRecipe && (
           <button
             type="button"
@@ -161,221 +159,95 @@ export function HaircutBlueprintDialog({
         )}
 
         <div className="space-y-5 text-sm">
-          {/* Zona 1: Sides & Back (Teknik Samping) */}
+          {/* 1. Sides */}
+          <AnatomyChipGroup
+            label="1. Teknik Samping & Gradasi (Sides & Back)"
+            options={BARBER_ANATOMY.sides}
+            selected={sideTechnique}
+            onSelect={setSideTechnique}
+          />
+
+          {/* 2. Guard */}
+          <AnatomyChipGroup
+            label="2. Sepatu Mesin Awal (Baseline Guard)"
+            options={BARBER_ANATOMY.guards}
+            selected={baselineGuard}
+            onSelect={setBaselineGuard}
+          />
+
+          {/* 3. Top Style */}
+          <AnatomyChipGroup
+            label="3. Siluet & Model Atas (Top Style)"
+            options={BARBER_ANATOMY.topStyles}
+            selected={topStyle}
+            onSelect={setTopStyle}
+          />
+
+          {/* 4. Top Technique */}
+          <AnatomyChipGroup
+            label="4. Teknik Gunting Atas (Texture)"
+            options={BARBER_ANATOMY.topTechniques}
+            selected={topTechnique}
+            onSelect={setTopTechnique}
+          />
+
+          {/* 5. Neckline */}
+          <AnatomyChipGroup
+            label="5. Garis Leher Belakang (Neckline)"
+            options={BARBER_ANATOMY.necklines}
+            selected={neckline}
+            onSelect={setNeckline}
+          />
+
+          {/* 6. Quirks (Multi) */}
+          <AnatomyChipGroup
+            label="6. Keunikan Kepala (Head Quirks - Multi-Select)"
+            options={BARBER_ANATOMY.headQuirks}
+            selected={headQuirks}
+            multiple
+            onSelect={toggleHeadQuirk}
+          />
+
+          {/* 7. Product */}
+          <AnatomyChipGroup
+            label="7. Produk Styling Rekomendasi"
+            options={BARBER_ANATOMY.stylingProducts}
+            selected={stylingProduct}
+            onSelect={setStylingProduct}
+          />
+
+          {/* 8. Notes */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-              1. Teknik Samping & Gradasi (Sides & Back)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {BARBER_ANATOMY.sides.map((side) => {
-                const active = sideTechnique === side.label;
-                return (
-                  <button
-                    key={side.id}
-                    type="button"
-                    onClick={() => setSideTechnique(side.label)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                      active
-                        ? "bg-amber-500 text-black border-amber-500 font-bold"
-                        : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                    }`}
-                  >
-                    {side.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Zona 2: Baseline Clipper Guard */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-              2. Sepatu Mesin Awal (Baseline Guard)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {BARBER_ANATOMY.guards.map((guard) => {
-                const active = baselineGuard === guard.label;
-                return (
-                  <button
-                    key={guard.id}
-                    type="button"
-                    onClick={() => setBaselineGuard(guard.label)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                      active
-                        ? "bg-amber-500 text-black border-amber-500 font-bold"
-                        : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                    }`}
-                  >
-                    {guard.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Zona 3: Model Bagian Atas (Top Hair Style) */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-              3. Siluet & Model Atas (Top Style)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {BARBER_ANATOMY.topStyles.map((style) => {
-                const active = topStyle === style.label;
-                return (
-                  <button
-                    key={style.id}
-                    type="button"
-                    onClick={() => setTopStyle(style.label)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                      active
-                        ? "bg-amber-500 text-black border-amber-500 font-bold"
-                        : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                    }`}
-                  >
-                    {style.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Zona 4: Teknik Gunting & Garis Tengkuk */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                Teknik Gunting Atas
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {BARBER_ANATOMY.topTechniques.map((tech) => {
-                  const active = topTechnique === tech.label;
-                  return (
-                    <button
-                      key={tech.id}
-                      type="button"
-                      onClick={() => setTopTechnique(tech.label)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                        active
-                          ? "bg-amber-500 text-black border-amber-500 font-bold"
-                          : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                      }`}
-                    >
-                      {tech.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                Bentuk Tengkuk (Neckline)
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {BARBER_ANATOMY.necklines.map((neck) => {
-                  const active = neckline === neck.label;
-                  return (
-                    <button
-                      key={neck.id}
-                      type="button"
-                      onClick={() => setNeckline(neck.label)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                        active
-                          ? "bg-amber-500 text-black border-amber-500 font-bold"
-                          : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                      }`}
-                    >
-                      {neck.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Zona 5: Anomali Kepala (Head Quirks) & Produk */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-              Anatomi Kepala / Pusaran Khusus (Head Quirks)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {BARBER_ANATOMY.headQuirks.map((quirk) => {
-                const active = headQuirks.includes(quirk.label);
-                return (
-                  <button
-                    key={quirk.id}
-                    type="button"
-                    onClick={() => toggleHeadQuirk(quirk.label)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1.5 ${
-                      active
-                        ? "bg-amber-500/20 text-amber-400 border-amber-500 font-bold"
-                        : "bg-[#20242B] border-[#2D3139] text-zinc-400 hover:border-zinc-500"
-                    }`}
-                  >
-                    <span>{quirk.label}</span>
-                    {active && <Check className="w-3.5 h-3.5 text-amber-500" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Produk Finishing */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider">
-              Styling Product
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {BARBER_ANATOMY.stylingProducts.map((p) => {
-                const active = stylingProduct === p.label;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setStylingProduct(p.label)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                      active
-                        ? "bg-amber-500 text-black border-amber-500 font-bold"
-                        : "bg-[#20242B] border-[#2D3139] text-zinc-300 hover:border-zinc-500"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Catatan Mikro Tambahan */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
-              Catatan Mikro Khusus (Opsional)
+              8. Catatan Mikro Tambahan (Opsional)
             </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Contoh: Belahan kiri tegas, jangan sentuh jambang atas"
+              placeholder="Contoh: Belah pinggir tipis ke kanan, jangan potong poni terlalu pendek."
               className="w-full bg-[#121316] border border-[#2D3139] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
             />
           </div>
         </div>
 
-        {/* Submit Actions */}
-        <div className="pt-4 border-t border-[#2D3139] flex items-center justify-end gap-3">
+        {/* Footer Actions */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2D3139]">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-[#252A31] hover:bg-[#303640] text-zinc-300 text-xs font-semibold transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-[#20242B] hover:bg-[#2A2F38] text-zinc-300 font-bold text-xs transition-colors"
           >
             Batal
           </button>
           <button
             type="button"
-            disabled={saving}
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-amber-500/20"
+            disabled={saving}
+            className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-black uppercase text-xs tracking-wider flex items-center gap-1.5 transition-all"
           >
-            {saving ? "Menyimpan..." : "Simpan Resep Potong"}
+            <Check className="w-4 h-4" />
+            <span>{saving ? "Menyimpan Blueprint..." : "Simpan Resep Potong"}</span>
           </button>
         </div>
       </div>
