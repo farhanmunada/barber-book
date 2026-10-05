@@ -71,6 +71,7 @@ export interface UserAccount {
   email: string;
   passwordHash: string;
   role: "owner" | "admin" | "staff" | "customer";
+  jobTitle?: string;
   branchId?: string | null;
   phone?: string;
   bankName?: string | null;
@@ -87,6 +88,7 @@ export interface PayrollRecord {
   staffName: string;
   staffEmail: string;
   staffRole: string;
+  jobTitle?: string;
   branchId: string;
   branchName: string;
   bankName: string;

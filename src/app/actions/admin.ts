@@ -69,16 +69,24 @@ export async function createUserAction(formData: FormData) {
   const name = formData.get("name")?.toString().trim();
   const email = formData.get("email")?.toString().trim().toLowerCase();
   const rawPassword = formData.get("password")?.toString();
-  const role = formData.get("role")?.toString() as "owner" | "admin" | "staff" | "customer";
+  const role = formData.get("role")?.toString() as "owner" | "admin" | "staff";
+  const jobTitle = formData.get("jobTitle")?.toString().trim() || "Barberman";
   const branchId = formData.get("branchId")?.toString().trim() || null;
   const phone = formData.get("phone")?.toString().trim();
 
+  // Bank & Payroll data
+  const bankName = formData.get("bankName")?.toString().trim() || "BCA";
+  const bankAccountNumber = formData.get("bankAccountNumber")?.toString().trim() || null;
+  const bankAccountHolder = formData.get("bankAccountHolder")?.toString().trim() || name;
+  const baseSalaryWeekly = Number(formData.get("baseSalaryWeekly")) || 1337500;
+  const commissionRate = Number(formData.get("commissionRate")) || (jobTitle.toLowerCase().includes("barber") ? 20 : 0);
+
   if (!name || !email || !rawPassword || !role) {
-    return { success: false, error: "Nama, email/username, password, dan role wajib diisi." };
+    return { success: false, error: "Nama, email/username, password, dan role karyawan wajib diisi." };
   }
 
   if (role === "staff" && !branchId) {
-    return { success: false, error: "Staf kasir / barber wajib ditugaskan ke salah satu cabang." };
+    return { success: false, error: "Karyawan cabang (Barber / Kasir) wajib ditugaskan ke salah satu cabang." };
   }
 
   try {
@@ -88,8 +96,14 @@ export async function createUserAction(formData: FormData) {
       email,
       passwordHash,
       role,
+      jobTitle,
       branchId,
       phone,
+      bankName,
+      bankAccountNumber,
+      bankAccountHolder,
+      baseSalaryWeekly,
+      commissionRate,
     });
 
     revalidatePath("/dashboard/admin");

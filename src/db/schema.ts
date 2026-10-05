@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   branchId: uuid("branch_id").references(() => branches.id), // Staff/barber assigned branch
   avatarUrl: text("avatar_url"),
   // Bank account & payroll configuration
+  jobTitle: text("job_title").notNull().default("Barberman"), // 'Barberman', 'Kasir / Front Desk', 'Branch Manager'
   bankName: text("bank_name"),
   bankAccountNumber: text("bank_account_number"),
   bankAccountHolder: text("bank_account_holder"),

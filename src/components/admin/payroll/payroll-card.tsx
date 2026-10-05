@@ -84,6 +84,9 @@ export function PayrollCard({ payroll: p, onSuccess, onError }: PayrollCardProps
             <span className="text-[10px] px-2 py-0.5 rounded font-black uppercase bg-[#252A31] text-amber-400 border border-[#3A404D]">
               {p.branchName}
             </span>
+            <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-blue-500/10 border border-blue-500/30 text-blue-400">
+              {p.jobTitle || p.staffRole}
+            </span>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">{p.staffEmail}</p>
         </div>

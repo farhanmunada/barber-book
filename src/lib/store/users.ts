@@ -11,6 +11,7 @@ export async function getUsers(): Promise<UserAccount[]> {
     email: u.email,
     passwordHash: u.passwordHash,
     role: u.role,
+    jobTitle: u.jobTitle || "Barberman",
     branchId: u.branchId,
     phone: u.phone || undefined,
     bankName: u.bankName,
@@ -37,6 +38,7 @@ export async function getUserById(id: string): Promise<UserAccount | undefined> 
     email: u.email,
     passwordHash: u.passwordHash,
     role: u.role,
+    jobTitle: u.jobTitle || "Barberman",
     branchId: u.branchId,
     phone: u.phone || undefined,
     bankName: u.bankName,
@@ -64,6 +66,7 @@ export async function getUserByEmail(emailOrUsername: string): Promise<UserAccou
     email: u.email,
     passwordHash: u.passwordHash,
     role: u.role,
+    jobTitle: u.jobTitle || "Barberman",
     branchId: u.branchId,
     phone: u.phone || undefined,
     bankName: u.bankName,
@@ -76,12 +79,16 @@ export async function getUserByEmail(emailOrUsername: string): Promise<UserAccou
 }
 
 export async function getBarbers(branchId?: string): Promise<BarberItem[]> {
-  const condition = branchId
+  const baseCondition = branchId
     ? and(eq(users.role, "staff"), eq(users.branchId, branchId))
     : eq(users.role, "staff");
 
-  const rows = await db.select().from(users).where(condition);
-  return rows.map((u) => ({
+  const rows = await db.select().from(users).where(baseCondition);
+  // Filter for barbers (exclude dedicated cashiers from barber haircut selection)
+  const barberRows = rows.filter((u) => !u.jobTitle || u.jobTitle.toLowerCase().includes("barber"));
+  const activeList = barberRows.length > 0 ? barberRows : rows;
+
+  return activeList.map((u) => ({
     id: u.id,
     name: u.name,
     email: u.email,
@@ -90,7 +97,7 @@ export async function getBarbers(branchId?: string): Promise<BarberItem[]> {
     avatarUrl:
       u.avatarUrl ||
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    specialty: "Classic Cut & Modern Fade",
+    specialty: u.jobTitle || "Classic Cut & Modern Fade",
     rating: 4.9,
   }));
 }
@@ -100,8 +107,14 @@ export async function createUser(data: {
   email: string;
   passwordHash: string;
   role: "owner" | "admin" | "staff" | "customer";
+  jobTitle?: string;
   branchId?: string | null;
   phone?: string;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountHolder?: string | null;
+  baseSalaryWeekly?: number;
+  commissionRate?: number;
 }): Promise<UserAccount> {
   const inserted = await db
     .insert(users)
@@ -110,8 +123,14 @@ export async function createUser(data: {
       email: data.email.toLowerCase().trim(),
       passwordHash: data.passwordHash,
       role: data.role,
+      jobTitle: data.jobTitle || (data.role === "staff" ? "Barberman" : "Staf Operasional"),
       branchId: data.branchId || null,
       phone: data.phone || null,
+      bankName: data.bankName || "BCA",
+      bankAccountNumber: data.bankAccountNumber || null,
+      bankAccountHolder: data.bankAccountHolder || data.name,
+      baseSalaryWeekly: data.baseSalaryWeekly || (data.role === "staff" ? 1337500 : 0),
+      commissionRate: data.commissionRate !== undefined ? data.commissionRate : 20,
     })
     .returning();
 
@@ -122,8 +141,14 @@ export async function createUser(data: {
     email: u.email,
     passwordHash: u.passwordHash,
     role: u.role,
+    jobTitle: u.jobTitle || "Barberman",
     branchId: u.branchId,
     phone: u.phone || undefined,
+    bankName: u.bankName,
+    bankAccountNumber: u.bankAccountNumber,
+    bankAccountHolder: u.bankAccountHolder,
+    baseSalaryWeekly: u.baseSalaryWeekly,
+    commissionRate: u.commissionRate,
     createdAt: u.createdAt.toISOString(),
   };
 }
