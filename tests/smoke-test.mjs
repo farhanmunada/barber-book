@@ -96,4 +96,47 @@ assert.equal(check3.reason, "Tersedia");
 
 console.log("✓ Test 5 Passed: Slot locking (past time & duplicate prevention) verified.");
 
+// 6. Weekly Payroll Calculation (UMR Gapok + 20% Service Commission + 100jt Branch Target Bonus)
+function calculateWeeklyPayroll({ baseSalaryWeekly, serviceRevenue, commissionRate = 20, branchWeeklyRevenue, activeBranchStaff = 1 }) {
+  const serviceCommission = Math.round(serviceRevenue * (commissionRate / 100));
+  let branchTargetBonus = 0;
+  if (branchWeeklyRevenue >= 100000000) {
+    const bonusPool = Math.round(branchWeeklyRevenue * 0.025); // 2.5% bonus pool
+    branchTargetBonus = Math.round(bonusPool / activeBranchStaff);
+  }
+  const totalPayout = baseSalaryWeekly + serviceCommission + branchTargetBonus;
+  return {
+    baseSalaryWeekly,
+    serviceCommission,
+    branchTargetBonus,
+    totalPayout,
+  };
+}
+
+// Case A: Normal week, branch revenue < 100jt
+const normalPay = calculateWeeklyPayroll({
+  baseSalaryWeekly: 1337500, // UMR DKI / 4
+  serviceRevenue: 10 * 85000, // 850,000
+  commissionRate: 20,
+  branchWeeklyRevenue: 18000000, // 18jt
+  activeBranchStaff: 2,
+});
+assert.equal(normalPay.serviceCommission, 170000);
+assert.equal(normalPay.branchTargetBonus, 0);
+assert.equal(normalPay.totalPayout, 1507500);
+
+// Case B: High volume week, branch revenue >= 100jt (Target reached!)
+const bonusPay = calculateWeeklyPayroll({
+  baseSalaryWeekly: 1337500,
+  serviceRevenue: 50 * 85000, // 4,250,000
+  commissionRate: 20,
+  branchWeeklyRevenue: 100000000, // 100jt reached!
+  activeBranchStaff: 2,
+});
+assert.equal(bonusPay.serviceCommission, 850000);
+assert.equal(bonusPay.branchTargetBonus, 1250000); // 2.5jt / 2 staff
+assert.equal(bonusPay.totalPayout, 3437500);
+
+console.log("✓ Test 6 Passed: Weekly Payroll (UMR, 20% commission, and 100jt branch bonus) verified.");
+
 console.log("\nALL TESTS GREEN!");

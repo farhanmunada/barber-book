@@ -22,6 +22,12 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["owner", "admin", "staff", "customer"] }).notNull().default("customer"),
   branchId: uuid("branch_id").references(() => branches.id), // Staff/barber terikat ke 1 cabang
   avatarUrl: text("avatar_url"),
+  // Info Penggajian & Rekening Bank
+  bankName: text("bank_name"), // BCA, Mandiri, BRI, BNI, dll.
+  bankAccountNumber: text("bank_account_number"),
+  bankAccountHolder: text("bank_account_holder"),
+  baseSalaryWeekly: integer("base_salary_weekly").notNull().default(1337500), // Default DKI Jakarta (~Rp 5.35jt/bln : 4)
+  commissionRate: integer("commission_rate").notNull().default(20), // Persentase komisi service (20%)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -94,5 +100,24 @@ export const haircutRecords = pgTable("haircut_records", {
   headQuirks: text("head_quirks").array(),     // ['Double Crown', 'Flat Occipital', 'Cowlick', 'Scalp Scar']
   stylingProduct: text("styling_product"),     // 'Matte Clay', 'Pomade', 'Powder', dll.
   notes: text("notes"),                        // Catatan mikro opsional
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 8. Penggajian Mingguan Karyawan (Weekly Payroll)
+export const payrolls = pgTable("payrolls", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  staffId: uuid("staff_id").references(() => users.id).notNull(),
+  branchId: uuid("branch_id").references(() => branches.id).notNull(),
+  periodStart: date("period_start").notNull(), // Awal minggu (Senin) YYYY-MM-DD
+  periodEnd: date("period_end").notNull(),     // Akhir minggu (Minggu) YYYY-MM-DD
+  baseSalary: integer("base_salary").notNull().default(0), // Gaji pokok mingguan
+  completedServicesCount: integer("completed_services_count").notNull().default(0),
+  serviceCommission: integer("service_commission").notNull().default(0), // 20% total service
+  branchTargetBonus: integer("branch_target_bonus").notNull().default(0), // Bonus target omzet cabang >= 100jt
+  totalPayout: integer("total_payout").notNull().default(0), // Total gapok + komisi + bonus
+  status: text("status", { enum: ["pending", "paid"] }).notNull().default("pending"),
+  paidAt: timestamp("paid_at"),
+  paymentReference: text("payment_reference"), // Catatan transfer / no referensi bank
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

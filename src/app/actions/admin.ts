@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createBranch, createService, createUser, deleteUser } from "@/lib/store";
+import {
+  createBranch,
+  createService,
+  createUser,
+  deleteUser,
+  markPayrollPaid,
+  updateStaffPayrollSettings,
+} from "@/lib/store";
 import { hashPassword, getSession } from "@/lib/auth";
 
 // Guard: Only admin can execute admin actions
@@ -98,6 +105,48 @@ export async function deleteUserAction(userId: string) {
     await deleteUser(userId);
     revalidatePath("/dashboard/admin");
     return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+export async function markPayrollPaidAction(
+  payrollId: string,
+  paymentReference?: string,
+  notes?: string
+) {
+  await requireAdmin();
+  try {
+    const success = await markPayrollPaid(payrollId, paymentReference, notes);
+    revalidatePath("/dashboard/admin");
+    return { success };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+export async function updateStaffPayrollSettingsAction(userId: string, formData: FormData) {
+  await requireAdmin();
+  const bankName = formData.get("bankName")?.toString().trim() || "BCA";
+  const bankAccountNumber = formData.get("bankAccountNumber")?.toString().trim();
+  const bankAccountHolder = formData.get("bankAccountHolder")?.toString().trim();
+  const baseSalaryWeekly = Number(formData.get("baseSalaryWeekly")) || 1337500;
+  const commissionRate = Number(formData.get("commissionRate")) || 20;
+
+  if (!bankAccountNumber || !bankAccountHolder) {
+    return { success: false, error: "Nomor rekening dan nama pemilik rekening wajib diisi." };
+  }
+
+  try {
+    const success = await updateStaffPayrollSettings(userId, {
+      bankName,
+      bankAccountNumber,
+      bankAccountHolder,
+      baseSalaryWeekly,
+      commissionRate,
+    });
+    revalidatePath("/dashboard/admin");
+    return { success };
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }

@@ -1,4 +1,4 @@
-import { getBranches, getServices, getUsers } from "@/lib/store";
+import { getBranches, getServices, getUsers, getWeeklyPayrolls, getCurrentWeekRange } from "@/lib/store";
 import { AdminManagementPanel } from "@/components/admin/admin-management-panel";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -6,10 +6,12 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const [branches, services, users] = await Promise.all([
+  const weekRange = getCurrentWeekRange();
+  const [branches, services, users, payrolls] = await Promise.all([
     getBranches(),
     getServices(),
     getUsers(),
+    getWeeklyPayrolls(weekRange.periodStart, weekRange.periodEnd),
   ]);
 
   return (
@@ -22,10 +24,10 @@ export default async function AdminDashboardPage() {
             <span>Master Admin Operasional</span>
           </div>
           <h1 className="text-3xl font-black text-white mt-1">
-            Pengelolaan Seluruh Elemen Bisnis
+            Pengelolaan Bisnis & Penggajian Karyawan
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Pusat kendali cabang, master tarif & layanan, serta manajemen akun & kredensial seluruh staf.
+            Pusat kendali cabang, master tarif, akun staf, dan pengelolaan penggajian mingguan mandiri.
           </p>
         </div>
 
@@ -45,6 +47,8 @@ export default async function AdminDashboardPage() {
         branches={branches}
         services={services}
         users={users}
+        payrolls={payrolls}
+        currentWeek={weekRange}
       />
     </div>
   );

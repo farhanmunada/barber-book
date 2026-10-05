@@ -33,7 +33,7 @@ console.log("Seeding data langsung ke Neon PostgreSQL database...");
 
 try {
   // 1. Bersihkan data lama jika ada
-  await sql`TRUNCATE TABLE haircut_records, booking_services, bookings, barber_schedules, services, users, branches CASCADE;`;
+  await sql`TRUNCATE TABLE payrolls, haircut_records, booking_services, bookings, barber_schedules, services, users, branches CASCADE;`;
   console.log("✓ Tabel berhasil dibersihkan.");
 
   // 2. Insert 3 Cabang
@@ -58,14 +58,14 @@ try {
   const budiHash = await bcrypt.hash("budi123", 10);
 
   const users = await sql`
-    INSERT INTO users (name, email, password_hash, role, branch_id, phone, avatar_url)
+    INSERT INTO users (name, email, password_hash, role, branch_id, phone, avatar_url, bank_name, bank_account_number, bank_account_holder, base_salary_weekly, commission_rate)
     VALUES
-      ('Bapak Hendarto', 'owner@barber.com', ${ownerHash}, 'owner', NULL, '0812-0000-001', NULL),
-      ('Siti Rahma (Admin Ops)', 'admin@barber.com', ${adminHash}, 'admin', NULL, '0812-0000-002', NULL),
-      ('Rian Santoso', 'kasir.kemang@barber.com', ${kasirHash}, 'staff', ${kemangId}, '0812-0000-003', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'),
-      ('Eko Razor', 'kasir.senopati@barber.com', ${kasirHash}, 'staff', ${senopatiId}, '0812-0000-004', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'),
-      ('Dimas Ardi', 'kasir.bintaro@barber.com', ${kasirHash}, 'staff', ${bintaroId}, '0812-0000-005', 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80'),
-      ('Budi Santoso', 'budi@gmail.com', ${budiHash}, 'customer', NULL, '0812-9988-7711', NULL)
+      ('Bapak Hendarto', 'owner@barber.com', ${ownerHash}, 'owner', NULL, '0812-0000-001', NULL, 'BCA', '8820-000-111', 'Hendarto', 0, 0),
+      ('Siti Rahma (Admin Ops)', 'admin@barber.com', ${adminHash}, 'admin', NULL, '0812-0000-002', NULL, 'BCA', '8820-000-222', 'Siti Rahma', 1500000, 0),
+      ('Rian Santoso', 'kasir.kemang@barber.com', ${kasirHash}, 'staff', ${kemangId}, '0812-0000-003', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', 'BCA', '8820-192-881', 'Rian Santoso', 1337500, 20),
+      ('Eko Razor', 'kasir.senopati@barber.com', ${kasirHash}, 'staff', ${senopatiId}, '0812-0000-004', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', 'Bank Mandiri', '1370-00-9982-110', 'Eko Razor', 1337500, 20),
+      ('Dimas Ardi', 'kasir.bintaro@barber.com', ${kasirHash}, 'staff', ${bintaroId}, '0812-0000-005', 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80', 'BRI', '0341-01-082910-50-2', 'Dimas Ardi', 1237500, 20),
+      ('Budi Santoso', 'budi@gmail.com', ${budiHash}, 'customer', NULL, '0812-9988-7711', NULL, NULL, NULL, NULL, 0, 0)
     RETURNING id, name, email, role;
   `;
   console.log(`✓ ${users.length} Akun pengguna dibuat di Neon.`);

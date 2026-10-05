@@ -73,6 +73,36 @@ export interface UserAccount {
   role: "owner" | "admin" | "staff" | "customer";
   branchId?: string | null;
   phone?: string;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountHolder?: string | null;
+  baseSalaryWeekly?: number;
+  commissionRate?: number;
+  createdAt: string;
+}
+
+export interface PayrollRecord {
+  id: string;
+  staffId: string;
+  staffName: string;
+  staffEmail: string;
+  staffRole: string;
+  branchId: string;
+  branchName: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  periodStart: string; // YYYY-MM-DD
+  periodEnd: string;   // YYYY-MM-DD
+  baseSalary: number;
+  completedServicesCount: number;
+  serviceCommission: number;
+  branchTargetBonus: number;
+  totalPayout: number;
+  status: "pending" | "paid";
+  paidAt?: string | null;
+  paymentReference?: string | null;
+  notes?: string | null;
   createdAt: string;
 }
 
